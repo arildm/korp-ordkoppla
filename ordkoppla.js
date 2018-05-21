@@ -19,13 +19,15 @@ $(document).ready(function() {
 
     function update(word) {
         word = clean(word);
-        addWord(word);
+        addWord(null, word);
         $.ajax({
             url: url_relations,
             data: {corpus: 'WIKIPEDIA-SV', word: word},
             dataType: "json",
             success: function(json) {
-                relations(word, json);
+                if (json.relations !== undefined) {
+                    relations(word, json);
+                }
             }
         });
     }
@@ -37,7 +39,7 @@ $(document).ready(function() {
         }).slice(0, 8);
         $.each(crop, function() {
             var to = (clean(this.head) === from) ? clean(this.dep) : clean(this.head);
-            addWordEdge(from, to);
+            addWord(from, to);
         });
         iterated.push(from);
     }
@@ -50,32 +52,26 @@ $(document).ready(function() {
         }
     }
 
-    function addWord(word) {
-        if (graph_dict[word] === undefined) {
-            graph_nodes.add({id: ++count, label: word});
-            graph_dict[word] = count;
+    function addWord(from, to) {
+        // Add node if new.
+        if (graph_dict[to] === undefined) {
+            graph_nodes.add({id: ++count, label: to});
+            graph_dict[to] = count;
         }
-        return graph_dict[word];
-    }
-
-    function addWordEdge(from, to) {
-        if (to === from) {
+        // Add or thicken edge.
+        if (!from) {
             return;
         }
-        console.log(from + ' ' + to);
-        console.log(graph_edges.get());
-        edges = graph_edges.get({
-            filter: function(item) {
-                return (item.from === from && item.to === to)
-                    || (item.from === to && item.to === from);
-            }
-        });
-        console.log(edges);
-        if (edges.length) {
-            edges[0].width++;
+        var edge_id = [graph_dict[from], graph_dict[to]].sort(function(a, b) {return a - b}).join('-');
+        var edge = graph_edges.get(edge_id);
+        if (!edge) {
+            graph_edges.add({id: edge_id, from: graph_dict[from], to: graph_dict[to], value: 1, length: 1});
         }
         else {
-            graph_edges.add({from: addWord(from), to: addWord(to), width: 1});
+            // graph_edges.update({id: edge_id, value: edge.value + 1, length: edge.length * .8});
+            edge.value += 1;
+            edge.length *= 0.8;
+            graph_edges.update(edge);
         }
     }
 
