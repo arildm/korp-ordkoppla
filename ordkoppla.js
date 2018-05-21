@@ -4,6 +4,15 @@
 
 $(document).ready(function () {
 
+    /* TODO
+     * - request queue
+     * - style queued/pending nodes
+     * - verb, nouns and adjectives only
+     * - hide new words unless important (what is important?
+     * - iterate automatically
+     * - or iterate on click?
+     */
+
     var url = 'https://ws.spraakbanken.gu.se/ws/korp/v7/';
     var url_relations = url + 'relations';
 
@@ -82,7 +91,7 @@ $(document).ready(function () {
         $.each(top_links, function () {
             // The from word can be either head or dep; add the other one.
             var to = (clean(this.head) === from) ? clean(this.dep) : clean(this.head);
-            addWord(from, to);
+            addWord(from, to, this.freq);
         });
         iterated.push(from);
     }
@@ -103,30 +112,27 @@ $(document).ready(function () {
         return nodes.get(graph_dict[word]);
     }
 
-    function addWord(from, to) {
+    function addWord(from, to, weight) {
         // Add node if new.
         addWordNode(to);
         // Add or thicken edge.
-        addEdge(from, to);
+        addEdge(from, to, weight);
     }
 
-    function addEdge(from, to) {
+    function addEdge(from, to, weight) {
         // Edge ID deterministically created from node IDs.
         var edge_id = [graph_dict[from], graph_dict[to]].sort(function (a, b) {
             return a - b
         }).join('-');
-        if (edge = edges.get(edge_id)) {
-            edge.value += 1;
-            edge.length *= 0.8;
-            return edges.update(edge);
+        if (!edges.get(edge_id)) {
+            edges.add({
+                id: edge_id,
+                from: graph_dict[from],
+                to: graph_dict[to],
+                value: weight,
+                length: 1 / weight
+            });
         }
-        return edges.add({
-            id: edge_id,
-            from: graph_dict[from],
-            to: graph_dict[to],
-            value: 1,
-            length: 1
-        });
     }
 
     function clean(lemgram) {
@@ -139,7 +145,7 @@ $(document).ready(function () {
     $('#ordkoppla-submit').click(function () {
         init();
         start([$('#word1').val(), $('#word2').val()]);
-    }).click();
+    });
     $('#ordkoppla-iterate').click(function () {
         iterate();
     });
