@@ -5,7 +5,6 @@
 $(document).ready(function () {
 
     /* TODO
-     * - style queued/pending nodes
      * - verb, nouns and adjectives only
      * - hide new words unless important (what is important?
      * - iterate automatically
@@ -21,6 +20,7 @@ $(document).ready(function () {
     var graph_dict;
     var count;
     var queue;
+    var start_words;
 
     function init() {
         nodes = new vis.DataSet([]);
@@ -34,12 +34,18 @@ $(document).ready(function () {
                 'color': {'background': 'white', 'border': 'darkgray'}
             },
             'groups': {
-                'start': {
-                    'shape': 'text',
-                    'physics': false,
-                    'color': {'background': 'lightgray', 'border': 'darkgray'},
-                    'font': {'size': 24}
-                }
+                'normal': {
+                    'color': {'background': 'white', 'border': 'darkgray'}
+                },
+                'loading': {
+                    'color': {'background': 'lightblue', 'border': 'blue'}
+                },
+                // 'start': {
+                //     'shape': 'text',
+                //     'physics': false,
+                //     'color': {'background': 'lightgray', 'border': 'darkgray'},
+                //     'font': {'size': 24}
+                // }
             },
             'physics': {
                 'maxVelocity': 5,
@@ -57,9 +63,14 @@ $(document).ready(function () {
     }
 
     function start(words) {
+        start_words = words;
         $.each(words, function (i, word) {
             x = (i - words.length / 2 + .5) * $('#ordkoppla').width() / words.length;
-            addWordNode(word, {'group': 'start', 'x': x, 'y': 0});
+            addWordNode(word, {'x': x, 'y': 0,
+                'physics': false,
+                'shape': 'text',
+                'font': {'size': 24}
+            });
             search(word);
         });
     }
@@ -75,6 +86,7 @@ $(document).ready(function () {
     }
 
     function search(word) {
+        nodes.update({id: graph_dict[word], group: 'loading'});
         $.ajax({
             url: url_relations,
             data: {corpus: 'WIKIPEDIA-SV', word: word},
@@ -86,6 +98,9 @@ $(document).ready(function () {
             },
             error: function (json) {
                 enqueue(word);
+            },
+            complete: function () {
+                nodes.update({id: graph_dict[word], group: 'normal'});//start_words.includes(word) ? 'start' : 'normal'});
             }
         });
     }
