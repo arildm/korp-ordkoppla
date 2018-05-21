@@ -2,29 +2,70 @@
  * @author Arild Matsson <arild@klavaro.se>
  */
 
-$(document).ready(function() {
+$(document).ready(function () {
 
     var url = 'https://ws.spraakbanken.gu.se/ws/korp/v7/';
     var url_relations = url + 'relations';
 
-    var graph_nodes = new vis.DataSet([]);
-    var graph_edges = new vis.DataSet([]);
-    var graph = new vis.Network($('#ordkoppla').get(0), {
-        nodes: graph_nodes,
-        edges: graph_edges
-    }, {});
-    var graph_dict = {};
-    var count = 0;
-    var iterated = [];
+    var nodes;
+    var edges;
+    var graph;
+    var graph_dict;
+    var count;
+    var iterated;
 
-    function update(word) {
-        word = clean(word);
-        addWord(null, word);
+    function init() {
+        nodes = new vis.DataSet([]);
+        edges = new vis.DataSet([]);
+        graph = new vis.Network($('#ordkoppla').get(0), {
+            nodes: nodes,
+            edges: edges
+        }, {
+            'nodes': {
+                'shape': 'ellipse',
+                'color': {'background': 'white', 'border': 'darkgray'}
+            },
+            'groups': {
+                'start': {
+                    'shape': 'text',
+                    'physics': false,
+                    'color': {'background': 'lightgray', 'border': 'darkgray'},
+                    'font': {'size': 24}
+                }
+            },
+            'physics': {
+                'maxVelocity': 5,
+                'barnesHut': {
+                    'avoidOverlap': 0.4,
+                    'springLength': 0,
+                    'centralGravity': 0,
+                    'springConstant': 0.1
+                }
+            }
+        });
+        graph_dict = {};
+        count = 0;
+        iterated = [];
+    }
+
+    function start(words) {
+        $.each(words, function (i, word) {
+            x = (i - words.length / 2 + .5) * $('#ordkoppla').width() / words.length;
+            addWordNode(word, {
+                'group': 'start',
+                'x': x,
+                'y': 0,
+            });
+            search(word);
+        });
+    }
+
+    function search(word) {
         $.ajax({
             url: url_relations,
             data: {corpus: 'WIKIPEDIA-SV', word: word},
             dataType: "json",
-            success: function(json) {
+            success: function (json) {
                 if (json.relations !== undefined) {
                     relations(word, json);
                 }
@@ -34,10 +75,12 @@ $(document).ready(function() {
 
     function relations(from, json) {
         // Select N most frequent links.
-        var crop = json.relations.sort(function(a, b) {
+        var top_links = json.relations.sort(function (a, b) {
             return b.freq - a.freq;
         }).slice(0, 8);
-        $.each(crop, function() {
+        // Add each link to the graph.
+        $.each(top_links, function () {
+            // The from word can be either head or dep; add the other one.
             var to = (clean(this.head) === from) ? clean(this.dep) : clean(this.head);
             addWord(from, to);
         });
@@ -45,48 +88,59 @@ $(document).ready(function() {
     }
 
     function iterate() {
-        for (word in graph_dict) {
+        for (var word in graph_dict) {
             if (!iterated.includes(word)) {
-                update(word);
+                search(word);
             }
         }
     }
 
+    function addWordNode(word, options) {
+        if (graph_dict[word] === undefined) {
+            nodes.add($.extend({id: ++count, label: word}, options));
+            graph_dict[word] = count;
+        }
+        return nodes.get(graph_dict[word]);
+    }
+
     function addWord(from, to) {
         // Add node if new.
-        if (graph_dict[to] === undefined) {
-            graph_nodes.add({id: ++count, label: to});
-            graph_dict[to] = count;
-        }
+        addWordNode(to);
         // Add or thicken edge.
-        if (!from) {
-            return;
-        }
-        var edge_id = [graph_dict[from], graph_dict[to]].sort(function(a, b) {return a - b}).join('-');
-        var edge = graph_edges.get(edge_id);
-        if (!edge) {
-            graph_edges.add({id: edge_id, from: graph_dict[from], to: graph_dict[to], value: 1, length: 1});
-        }
-        else {
-            // graph_edges.update({id: edge_id, value: edge.value + 1, length: edge.length * .8});
+        addEdge(from, to);
+    }
+
+    function addEdge(from, to) {
+        // Edge ID deterministically created from node IDs.
+        var edge_id = [graph_dict[from], graph_dict[to]].sort(function (a, b) {
+            return a - b
+        }).join('-');
+        if (edge = edges.get(edge_id)) {
             edge.value += 1;
             edge.length *= 0.8;
-            graph_edges.update(edge);
+            return edges.update(edge);
         }
+        return edges.add({
+            id: edge_id,
+            from: graph_dict[from],
+            to: graph_dict[to],
+            value: 1,
+            length: 1
+        });
     }
 
     function clean(lemgram) {
         return lemgram.replace(/\..*/, '');
     }
 
-    $('#ordkoppla-controls form').submit(function(e) {
+    $('#ordkoppla-controls form').submit(function (e) {
         e.preventDefault();
     });
-    $('#ordkoppla-submit').click(function() {
-        update($('#word1').val());
-        update($('#word2').val());
+    $('#ordkoppla-submit').click(function () {
+        init();
+        start([$('#word1').val(), $('#word2').val()]);
     }).click();
-    $('#ordkoppla-iterate').click(function() {
+    $('#ordkoppla-iterate').click(function () {
         iterate();
     });
 

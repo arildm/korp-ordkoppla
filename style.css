@@ -1,5 +1,5 @@
 #ordkoppla {
-    width: 800px;
-    height: 500px;
-    border: thin solid lightgray;
+    position: absolute;
+    width: 100%;
+    height: 100%;
 }
