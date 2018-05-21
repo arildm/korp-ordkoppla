@@ -5,7 +5,6 @@
 $(document).ready(function () {
 
     /* TODO
-     * - request queue
      * - style queued/pending nodes
      * - verb, nouns and adjectives only
      * - hide new words unless important (what is important?
@@ -21,7 +20,7 @@ $(document).ready(function () {
     var graph;
     var graph_dict;
     var count;
-    var iterated;
+    var queue;
 
     function init() {
         nodes = new vis.DataSet([]);
@@ -54,19 +53,25 @@ $(document).ready(function () {
         });
         graph_dict = {};
         count = 0;
-        iterated = [];
+        queue = [];
     }
 
     function start(words) {
         $.each(words, function (i, word) {
             x = (i - words.length / 2 + .5) * $('#ordkoppla').width() / words.length;
-            addWordNode(word, {
-                'group': 'start',
-                'x': x,
-                'y': 0,
-            });
+            addWordNode(word, {'group': 'start', 'x': x, 'y': 0});
             search(word);
         });
+    }
+
+    function enqueue(word) {
+        queue.push(word);
+    }
+
+    function next() {
+        if (word = queue.shift()) {
+            search(word, null);
+        }
     }
 
     function search(word) {
@@ -78,6 +83,9 @@ $(document).ready(function () {
                 if (json.relations !== undefined) {
                     relations(word, json);
                 }
+            },
+            error: function (json) {
+                enqueue(word);
             }
         });
     }
@@ -92,16 +100,8 @@ $(document).ready(function () {
             // The from word can be either head or dep; add the other one.
             var to = (clean(this.head) === from) ? clean(this.dep) : clean(this.head);
             addWord(from, to, this.freq);
+            enqueue(to);
         });
-        iterated.push(from);
-    }
-
-    function iterate() {
-        for (var word in graph_dict) {
-            if (!iterated.includes(word)) {
-                search(word);
-            }
-        }
     }
 
     function addWordNode(word, options) {
@@ -147,7 +147,7 @@ $(document).ready(function () {
         start([$('#word1').val(), $('#word2').val()]);
     });
     $('#ordkoppla-iterate').click(function () {
-        iterate();
+        next();
     });
 
 });
