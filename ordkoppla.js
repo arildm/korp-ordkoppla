@@ -5,7 +5,6 @@
 $(document).ready(function () {
 
     /* TODO
-     * - verb, nouns and adjectives only
      * - hide new words unless important (what is important?
      * - iterate automatically
      * - or iterate on click?
@@ -39,13 +38,7 @@ $(document).ready(function () {
                 },
                 'loading': {
                     'color': {'background': 'lightblue', 'border': 'blue'}
-                },
-                // 'start': {
-                //     'shape': 'text',
-                //     'physics': false,
-                //     'color': {'background': 'lightgray', 'border': 'darkgray'},
-                //     'font': {'size': 24}
-                // }
+                }
             },
             'physics': {
                 'maxVelocity': 5,
@@ -68,7 +61,7 @@ $(document).ready(function () {
             x = (i - words.length / 2 + .5) * $('#ordkoppla').width() / words.length;
             addWordNode(word, {'x': x, 'y': 0,
                 'physics': false,
-                'shape': 'text',
+                // 'shape': 'text',
                 'font': {'size': 24}
             });
             search(word);
@@ -100,18 +93,27 @@ $(document).ready(function () {
                 enqueue(word);
             },
             complete: function () {
-                nodes.update({id: graph_dict[word], group: 'normal'});//start_words.includes(word) ? 'start' : 'normal'});
+                nodes.update({id: graph_dict[word], group: 'normal'});
             }
         });
     }
 
     function relations(from, json) {
-        // Select N most frequent links.
-        var top_links = json.relations.sort(function (a, b) {
+        // Finding the direction of a link.
+        function from_is_head(item) {
+            return item.head === from;
+        }
+
+        // Sort by frequency, filter by POS, select top few.
+        allowed_pos = ['NN', 'VB'];
+        var selection = json.relations.sort(function (a, b) {
             return b.freq - a.freq;
+        }).filter(function(item) {
+            return allowed_pos.includes(item[from_is_head(item) ? 'deppos' : 'headpos']);
         }).slice(0, 8);
+
         // Add each link to the graph.
-        $.each(top_links, function () {
+        $.each(selection, function () {
             // The from word can be either head or dep; add the other one.
             var to = (clean(this.head) === from) ? clean(this.dep) : clean(this.head);
             addWord(from, to, this.freq);
