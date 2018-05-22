@@ -7,6 +7,7 @@ $(document).ready(function () {
     /* TODO
      * - hide new words unless important (what is important?
      * - animated loading bg
+     * - interactive edges: show relations
      */
 
     var url = 'https://ws.spraakbanken.gu.se/ws/korp/v7/';
@@ -38,8 +39,7 @@ $(document).ready(function () {
             barnesHut: {
                 avoidOverlap: 0.4,
                 springLength: 0,
-                centralGravity: 0,
-                springConstant: 0.1
+                centralGravity: 0.1
             }
         },
         interaction: {hover: true}
