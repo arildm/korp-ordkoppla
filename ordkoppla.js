@@ -6,7 +6,6 @@ $(document).ready(function () {
 
     /* TODO
      * - hide new words unless important (what is important?
-     * - new words appear at pos of old word
      */
 
     var url = 'https://ws.spraakbanken.gu.se/ws/korp/v7/';
@@ -55,7 +54,7 @@ $(document).ready(function () {
         }, network_options);
         graph.on('selectNode', function (params) {
             params.nodes.forEach(function (id) {
-                search(nodes.get(id).label)
+                search(nodes.get(id).label);
             });
         }).on('hoverNode', function (params) {
             nodes.update({id: params.node, physics: false});
@@ -127,7 +126,7 @@ $(document).ready(function () {
 
     function addWord(from, to, weight) {
         // Add node if new.
-        addWordNode(to);
+        addWordNode(to, graph.getPositions(graph_dict[from])[graph_dict[from]]);
         // Add or thicken edge.
         addEdge(from, to, weight);
     }
