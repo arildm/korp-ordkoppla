@@ -6,31 +6,33 @@ $(document).ready(function () {
 
     /* TODO
      * - interactive edges: show relations
+     * - configurable settings
+     * - styled controls form
      */
 
-    var url = 'https://ws.spraakbanken.gu.se/ws/korp/v7/';
-    var url_relations = url + 'relations';
+    /**
+     * Constants.
+     */
+    const url = 'https://ws.spraakbanken.gu.se/ws/korp/v7/';
+    const url_relations = url + 'relations';
 
-    var nodes;
-    var edges;
-    var graph;
-    var graph_dict;
-    var count;
-    var start_nodes;
-
-    var allowed_pos = ['NN', 'VB'];
-    var network_options = {
+    /**
+     * Configuration.
+     */
+    const allowed_pos = ['NN', 'VB'];
+    const batch_size = 6;
+    const corpus = 'WIKIPEDIA-SV';
+    const network_options = {
         nodes: {
-            shape: 'ellipse',
             chosen: false,
-            color: {background: 'white', border: 'darkgray'}
+            group: 'normal'
         },
         groups: {
             normal: {
                 color: {background: 'white', border: 'darkgray'}
             },
             loading: {
-                color: {background: 'lightblue', border: 'blue'}
+                color: {background: 'lightskyblue', border: 'dodgerblue'}
             }
         },
         physics: {
@@ -44,6 +46,19 @@ $(document).ready(function () {
         interaction: {hover: true}
     };
 
+    /**
+     * State variables.
+     */
+    var nodes;
+    var edges;
+    var graph;
+    var graph_dict;
+    var count;
+    var start_nodes;
+
+    /**
+     * Initialize network graph.
+     */
     function init() {
         nodes = new vis.DataSet([]);
         edges = new vis.DataSet([]);
@@ -69,6 +84,9 @@ $(document).ready(function () {
         start_nodes = [];
     }
 
+    /**
+     * Enter start words to the graph.
+     */
     function start(words) {
         $.each(words, function (i, word) {
             var node = addWordNode(word, {
@@ -81,12 +99,15 @@ $(document).ready(function () {
         });
     }
 
+    /**
+     * Perform word picture API call for a word.
+     */
     function search(word) {
         nodes.update({id: graph_dict[word], group: 'loading'});
         $.ajax({
             url: url_relations,
-            data: {corpus: 'WIKIPEDIA-SV', word: word},
-            dataType: "json",
+            data: {corpus: corpus, word: word},
+            dataType: 'json',
             success: function (json) {
                 if (json.relations !== undefined) {
                     relations(word, json);
@@ -98,7 +119,11 @@ $(document).ready(function () {
         });
     }
 
+    /**
+     * Handle the result of a word picture API call.
+     */
     function relations(from, json) {
+        // Either "head" or "dep" is interesting. Transform items to be easier to handle.
         var items = json.relations.map(function (item) {
             var part = item.head === from ? 'dep' : 'head';
             return {
@@ -118,14 +143,15 @@ $(document).ready(function () {
         // Add a few new words to the graph.
         var added = 0;
         items.forEach(function (item) {
-            if (added < 6 && !graph_dict.hasOwnProperty(item.word)) {
+            if (added < batch_size && !graph_dict.hasOwnProperty(item.word)) {
                 var xy = graph.getPositions(graph_dict[from])[graph_dict[from]];
                 addWordNode(item.word, xy);
                 added++;
             }
         });
 
-        // Add links to the graph.
+        // Add links to the graph. Not just for the few nodes added now, but
+        // also in case the from-word has a link to an already existing word.
         items.forEach(function (item) {
             if (graph_dict.hasOwnProperty(item.word)) {
                 addEdge(from, item.word);
@@ -133,6 +159,9 @@ $(document).ready(function () {
         });
     }
 
+    /**
+     * Add a word to the graph, if it does not already exist.
+     */
     function addWordNode(word, options) {
         if (graph_dict[word] === undefined) {
             nodes.add($.extend({id: ++count, label: word}, options));
@@ -141,6 +170,9 @@ $(document).ready(function () {
         return nodes.get(graph_dict[word]);
     }
 
+    /**
+     * Add an edge between two words, if it does not already exist.
+     */
     function addEdge(from, to) {
         // Edge ID deterministically created from node IDs.
         var edge_id = [graph_dict[from], graph_dict[to]].sort().join('-');
@@ -153,6 +185,9 @@ $(document).ready(function () {
         }
     }
 
+    /**
+     * Simplify a lemgram to a word.
+     */
     function clean(lemgram) {
         return lemgram.replace(/\..*/, '');
     }
