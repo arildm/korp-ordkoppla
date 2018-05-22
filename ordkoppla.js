@@ -6,8 +6,7 @@ $(document).ready(function () {
 
     /* TODO
      * - hide new words unless important (what is important?
-     * - iterate automatically
-     * - or iterate on click?
+     * - new words appear at pos of old word
      */
 
     var url = 'https://ws.spraakbanken.gu.se/ws/korp/v7/';
@@ -16,10 +15,36 @@ $(document).ready(function () {
     var nodes;
     var edges;
     var graph;
-    var graph_dict;
-    var count;
-    var queue;
-    var start_words;
+    var graph_dict = {};
+    var count = 0;
+    var start_nodes = [];
+
+    var network_options = {
+        nodes: {
+            shape: 'ellipse',
+            color: {background: 'white', border: 'darkgray'}
+        },
+        groups: {
+            normal: {
+                color: {background: 'white', border: 'darkgray'}
+            },
+            loading: {
+                color: {background: 'lightblue', border: 'blue'}
+            }
+        },
+        physics: {
+            maxVelocity: 5,
+            barnesHut: {
+                avoidOverlap: 0.4,
+                springLength: 0,
+                centralGravity: 0,
+                springConstant: 0.1
+            }
+        },
+        interaction: {
+            hover: true
+        }
+    };
 
     function init() {
         nodes = new vis.DataSet([]);
@@ -27,55 +52,29 @@ $(document).ready(function () {
         graph = new vis.Network($('#ordkoppla').get(0), {
             nodes: nodes,
             edges: edges
-        }, {
-            'nodes': {
-                'shape': 'ellipse',
-                'color': {'background': 'white', 'border': 'darkgray'}
-            },
-            'groups': {
-                'normal': {
-                    'color': {'background': 'white', 'border': 'darkgray'}
-                },
-                'loading': {
-                    'color': {'background': 'lightblue', 'border': 'blue'}
-                }
-            },
-            'physics': {
-                'maxVelocity': 5,
-                'barnesHut': {
-                    'avoidOverlap': 0.4,
-                    'springLength': 0,
-                    'centralGravity': 0,
-                    'springConstant': 0.1
-                }
-            }
+        }, network_options);
+        graph.on('selectNode', function (params) {
+            params.nodes.forEach(function (id) {
+                search(nodes.get(id).label)
+            });
+        }).on('hoverNode', function (params) {
+            nodes.update({id: params.node, physics: false});
+        }).on('blurNode', function (params) {
+            nodes.update({id: params.node, physics: !start_nodes.includes(params.node)});
+            graph.unselectAll();
         });
-        graph_dict = {};
-        count = 0;
-        queue = [];
     }
 
     function start(words) {
-        start_words = words;
         $.each(words, function (i, word) {
             x = (i - words.length / 2 + .5) * $('#ordkoppla').width() / words.length;
-            addWordNode(word, {'x': x, 'y': 0,
+            var node = addWordNode(word, {'x': x, 'y': 0,
                 'physics': false,
-                // 'shape': 'text',
                 'font': {'size': 24}
             });
+            start_nodes.push(node.id);
             search(word);
         });
-    }
-
-    function enqueue(word) {
-        queue.push(word);
-    }
-
-    function next() {
-        if (word = queue.shift()) {
-            search(word, null);
-        }
     }
 
     function search(word) {
@@ -89,9 +88,6 @@ $(document).ready(function () {
                     relations(word, json);
                 }
             },
-            error: function (json) {
-                enqueue(word);
-            },
             complete: function () {
                 nodes.update({id: graph_dict[word], group: 'normal'});
             }
@@ -100,24 +96,24 @@ $(document).ready(function () {
 
     function relations(from, json) {
         // Finding the direction of a link.
-        function from_is_head(item) {
-            return item.head === from;
+        function dep_or_head(item) {
+            return item.head === from ? 'dep' : 'head';
         }
 
         // Sort by frequency, filter by POS, select top few.
         allowed_pos = ['NN', 'VB'];
         var selection = json.relations.sort(function (a, b) {
             return b.freq - a.freq;
-        }).filter(function(item) {
-            return allowed_pos.includes(item[from_is_head(item) ? 'deppos' : 'headpos']);
+        });
+        selection = selection.filter(function(item) {
+            return allowed_pos.includes(item[dep_or_head(item) + 'pos']);
         }).slice(0, 8);
 
         // Add each link to the graph.
-        $.each(selection, function () {
+        selection.forEach(function (item) {
             // The from word can be either head or dep; add the other one.
-            var to = (clean(this.head) === from) ? clean(this.dep) : clean(this.head);
-            addWord(from, to, this.freq);
-            enqueue(to);
+            var to = clean(item[dep_or_head(item)]);
+            addWord(from, to, Math.log(item.freq));
         });
     }
 
@@ -162,9 +158,6 @@ $(document).ready(function () {
     $('#ordkoppla-submit').click(function () {
         init();
         start([$('#word1').val(), $('#word2').val()]);
-    });
-    $('#ordkoppla-iterate').click(function () {
-        next();
     });
 
 });
