@@ -5,7 +5,6 @@
 /* TODO
  * - interactive edges: show relations
  * - configurable settings
- * - help choose starting lemgram
  */
 
 function Ordkoppla(element, config) {
@@ -190,14 +189,31 @@ Ordkoppla.prototype = {
     }
 };
 
+/**
+ * A small collection of lemgrams.
+ */
+var sample_lemgrams = [
+    'tävla..vb.1', 'krokodil..nn.1', 'lakrits..nn.1', 'oändlig..av.1',
+    'lukta..vb.1', 'lukta..vb.2', 'ge..vb.1', 'sträng..av.1', 'sträng..nn.1'
+];
+
 var app;
 
 $(document).ready(function () {
 
     $('#ordkoppla-controls form').submit(function (e) {
         e.preventDefault();
+    });
+
+    $('#ordkoppla-search').click(function () {
         app = new Ordkoppla($('#ordkoppla').get(0));
         app.start([$('#word1').val()]);
+    });
+
+    $('#ordkoppla-random').click(function () {
+        app = new Ordkoppla($('#ordkoppla').get(0));
+        i = Math.floor(Math.random() * sample_lemgrams.length);
+        app.start([sample_lemgrams[i]]);
     });
 
     /**
@@ -205,7 +221,10 @@ $(document).ready(function () {
      */
     $('.togglable').each(function () {
         var $togglable = $(this);
-        var config = $.extend({show: 'Show', hide: 'Hide'}, $togglable.data('togglable'));
+        var config = $.extend({
+            show: 'Show',
+            hide: 'Hide'
+        }, $togglable.data('togglable'));
         var $toggle = $('<a href="#">').text(config.hide).click(function (event) {
             event.preventDefault();
             $togglable.toggle();
