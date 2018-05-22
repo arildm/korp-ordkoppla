@@ -196,11 +196,24 @@ $(document).ready(function () {
 
     $('#ordkoppla-controls form').submit(function (e) {
         e.preventDefault();
-    });
-
-    $('#ordkoppla-submit').click(function () {
         app = new Ordkoppla($('#ordkoppla').get(0));
         app.start([$('#word1').val()]);
     });
+
+    /**
+     * Tiny configurable toggle support.
+     */
+    $('.togglable').each(function () {
+        var $togglable = $(this);
+        var config = $.extend({show: 'Show', hide: 'Hide'}, $togglable.data('togglable'));
+        var $toggle = $('<a href="#">').text(config.hide).click(function (event) {
+            event.preventDefault();
+            $togglable.toggle();
+            $toggle.text(!$togglable.is(':visible') ? config.show : config.hide);
+        });
+        $('<div>').attr('id', $togglable.attr('id') + '-toggle')
+            .append($toggle)
+            .insertAfter($togglable);
+    })
 
 });
