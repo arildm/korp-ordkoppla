@@ -9,25 +9,31 @@
 <body>
 
 <div id="ordkoppla-controls">
+
     <form>
         <p>
             <input id="word1" name="words[0]" value="skapa..vb.1">
             <input id="ordkoppla-submit" type="submit" value="Starta">
         </p>
     </form>
-    <p id="help">
-        Undersök ord och deras grannar.
-        Ange ett lemgram och starta.
-        Bubblorna färgas efter ordklass.
-        Klicka på en bubbla för att ladda nya grannar.
-    </p>
-</div>
 
-<div id="ordkoppla"></div>
+    <div id="help">
+        <p>Undersök ord och deras grannar.</p>
+        <ul>
+            <li>Ange ett lemgram och starta.</li>
+            <li>Bubblorna färgas efter ordklass.</li>
+            <li>Klicka på en bubbla för att ladda nya grannar.</li>
+            <li>Klicka igen för att ladda fler.</li>
+            <li>Det går bra att dra omkring och zooma.</li>
+        </ul>
+        <p>Använder <a href="http://visjs.org/">vis.js</a>.</p>
+    </div>
 
-<script src="vis.min.js"></script>
-<script src="jquery-3.3.1.min.js"></script>
-<script src="ordkoppla.js"></script>
+    <div id="ordkoppla"></div>
+
+    <script src="vis.min.js"></script>
+    <script src="jquery-3.3.1.min.js"></script>
+    <script src="ordkoppla.js"></script>
 
 </body>
 </html>
