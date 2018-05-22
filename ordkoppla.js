@@ -5,7 +5,7 @@
 /* TODO
  * - interactive edges: show relations
  * - configurable settings
- * - styled controls form
+ * - help choose starting lemgram
  */
 
 function Ordkoppla(element, config) {
@@ -14,7 +14,7 @@ function Ordkoppla(element, config) {
      */
     this.config = $.extend({
         api_url: 'https://ws.spraakbanken.gu.se/ws/korp/v7/',
-        allowed_pos: ['NN', 'VB'],
+        allowed_pos: ['nn', 'vb', 'av'],
         batch_size: 5,
         corpus: 'WIKIPEDIA-SV',
         network_options: {
@@ -22,11 +22,10 @@ function Ordkoppla(element, config) {
                 chosen: false,
             },
             groups: {
-                VB: {color: {background: 'pink', border: 'palevioletred'}},
-                NN: {color: {background: 'cornsilk', border: 'bisque'}},
-                loading: {
-                    color: {background: 'lightskyblue', border: 'dodgerblue'}
-                }
+                vb: {color: '#7dcea0'},
+                nn: {color: '#f5cba7'},
+                av: {color: '#f9e79f'},
+                loading: {color: '#d6eaf8'}
             },
             physics: {
                 maxVelocity: 5,
@@ -187,7 +186,7 @@ Ordkoppla.prototype = {
      */
     pos: function (lemgram) {
         var split = lemgram.split('.');
-        return split.length > 2 ? split[2].toUpperCase() : null;
+        return split.length > 2 ? split[2] : null;
     }
 };
 

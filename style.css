@@ -1,3 +1,28 @@
+body, input {
+    font-family: sans-serif;
+    font-size: 100%;
+}
+
+input {
+    border: thin solid lightgray;
+    background: whitesmoke;
+    padding: .3em .5em;
+    border-radius: .2em;
+}
+
+input[type=submit] {
+    background: #d6eaf8;
+}
+
+#help {
+    font-size: 80%;
+}
+
+#ordkoppla-controls {
+    background: rgba(255, 255, 255, .3);
+    width: 20em;
+}
+
 #ordkoppla {
     position: absolute;
     top: 0;
