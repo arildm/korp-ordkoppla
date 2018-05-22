@@ -2,12 +2,10 @@
  * @author Arild Matsson <arild@klavaro.se>
  */
 
-
 /* TODO
  * - interactive edges: show relations
  * - configurable settings
  * - styled controls form
- * - Distinguish by POS
  */
 
 function Ordkoppla(element, config) {
@@ -22,12 +20,10 @@ function Ordkoppla(element, config) {
         network_options: {
             nodes: {
                 chosen: false,
-                group: 'normal'
             },
             groups: {
-                normal: {
-                    color: {background: 'white', border: 'darkgray'}
-                },
+                VB: {color: {background: 'pink', border: 'palevioletred'}},
+                NN: {color: {background: 'cornsilk', border: 'bisque'}},
                 loading: {
                     color: {background: 'lightskyblue', border: 'dodgerblue'}
                 }
@@ -35,9 +31,9 @@ function Ordkoppla(element, config) {
             physics: {
                 maxVelocity: 5,
                 barnesHut: {
-                    avoidOverlap: 0.4,
-                    springLength: 0,
-                    centralGravity: 0.2
+                    avoidOverlap: 0.2,
+                    springLength: 0.5,
+                    centralGravity: 0.3
                 }
             },
             interaction: {hover: true}
@@ -55,7 +51,7 @@ function Ordkoppla(element, config) {
     }, this.config.network_options);
     this.graph.on('selectNode', (function (params) {
         params.nodes.forEach((function (id) {
-            this.search(this.nodes.get(id).label);
+            this.search(this.nodes.get(id).lemgram, 'lemgram');
         }).bind(this));
     }).bind(this)).on('hoverNode', (function (params) {
         this.nodes.update({id: params.node, physics: false});
@@ -90,30 +86,38 @@ Ordkoppla.prototype = {
     /**
      * Add a word to the graph, if it does not already exist.
      */
-    addWordNode: function (word, options) {
-        if (this.graph_dict[word] === undefined) {
-            this.nodes.add($.extend({id: ++this.count, label: word}, options));
-            this.graph_dict[word] = this.count;
+    addWordNode: function (lemgram, options) {
+        if (this.graph_dict[lemgram] === undefined) {
+            this.nodes.add($.extend({
+                id: ++this.count,
+                label: this.clean(lemgram),
+                lemgram: lemgram,
+                group: this.pos(lemgram)
+            }, options));
+            this.graph_dict[lemgram] = this.count;
         }
-        return this.nodes.get(this.graph_dict[word]);
+        return this.nodes.get(this.graph_dict[lemgram]);
     },
 
     /**
      * Perform word picture API call for a word.
      */
-    search: function (word) {
-        this.nodes.update({id: this.graph_dict[word], group: 'loading'});
+    search: function (lemgram) {
+        this.nodes.update({id: this.graph_dict[lemgram], group: 'loading'});
         $.ajax({
             url: this.config.api_url + 'relations',
-            data: {corpus: this.config.corpus, word: word},
+            data: {corpus: this.config.corpus, type: 'lemgram', word: lemgram},
             dataType: 'json',
             success: (function (json) {
                 if (json.relations !== undefined) {
-                    this.relations(word, json);
+                    this.relations(lemgram, json);
                 }
             }).bind(this),
             complete: (function () {
-                this.nodes.update({id: this.graph_dict[word], group: 'normal'});
+                this.nodes.update({
+                    id: this.graph_dict[lemgram],
+                    group: this.pos(lemgram)
+                });
             }).bind(this)
         });
     },
@@ -123,28 +127,26 @@ Ordkoppla.prototype = {
      */
     relations: function (from, json) {
         // Either "head" or "dep" is interesting. Transform items to be easier to handle.
-        var items = json.relations.map((function (item) {
-            var part = item.head === from ? 'dep' : 'head';
+        var items = json.relations.map(function (item) {
             return {
-                word: this.clean(item[part]),
-                pos: item[part + 'pos'],
+                lemgram: item[(item.head === from ? 'dep' : 'head')],
                 item: item
             };
-        }).bind(this));
+        });
 
         // Sort by frequency, filter by POS.
         items = items.sort(function (a, b) {
             return b.item.freq - a.item.freq;
         }).filter((function (item) {
-            return this.config.allowed_pos.includes(item.pos);
+            return this.config.allowed_pos.includes(this.pos(item.lemgram));
         }).bind(this));
 
         // Add a few new words to the graph.
         var added = 0;
         items.forEach((function (item) {
-            if (added < this.config.batch_size && !this.graph_dict.hasOwnProperty(item.word)) {
+            if (added < this.config.batch_size && !this.graph_dict.hasOwnProperty(item.lemgram)) {
                 var xy = this.graph.getPositions(this.graph_dict[from])[this.graph_dict[from]];
-                this.addWordNode(item.word, xy);
+                this.addWordNode(item.lemgram, xy);
                 added++;
             }
         }).bind(this));
@@ -152,8 +154,8 @@ Ordkoppla.prototype = {
         // Add links to the graph. Not just for the few nodes added now, but
         // also in case the from-word has a link to an already existing word.
         items.forEach((function (item) {
-            if (this.graph_dict.hasOwnProperty(item.word)) {
-                this.addEdge(from, item.word);
+            if (this.graph_dict.hasOwnProperty(item.lemgram)) {
+                this.addEdge(from, item.lemgram);
             }
         }).bind(this));
     },
@@ -177,7 +179,15 @@ Ordkoppla.prototype = {
      * Simplify a lemgram to a word.
      */
     clean: function (lemgram) {
-        return lemgram.replace(/\..*/, '');
+        return lemgram.split('.')[0].replace('_', ' ');
+    },
+
+    /**
+     * Get POS of a lemgram, or null if it's a normal word.
+     */
+    pos: function (lemgram) {
+        var split = lemgram.split('.');
+        return split.length > 2 ? split[2].toUpperCase() : null;
     }
 };
 
