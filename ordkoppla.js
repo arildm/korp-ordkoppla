@@ -4,18 +4,17 @@
 
 /* TODO
  * - interactive edges: show relations
- * - configurable settings
  */
 
 function Ordkoppla(element, config) {
     /**
      * Configuration.
      */
-    this.config = $.extend({
+    this.config = $.extend(true, {
         api_url: 'https://ws.spraakbanken.gu.se/ws/korp/v7/',
         allowed_pos: ['nn', 'vb', 'av'],
         batch_size: 5,
-        corpus: 'WIKIPEDIA-SV',
+        corpus: ['WIKIPEDIA-SV'],
         network_options: {
             nodes: {
                 chosen: false,
@@ -104,7 +103,7 @@ Ordkoppla.prototype = {
         this.nodes.update({id: this.graph_dict[lemgram], group: 'loading'});
         $.ajax({
             url: this.config.api_url + 'relations',
-            data: {corpus: this.config.corpus, type: 'lemgram', word: lemgram},
+            data: {corpus: this.config.corpus.join(','), type: 'lemgram', word: lemgram},
             dataType: 'json',
             success: (function (json) {
                 if (json.relations !== undefined) {
@@ -206,15 +205,34 @@ $(document).ready(function () {
     });
 
     $('#ordkoppla-search').click(function () {
-        app = new Ordkoppla($('#ordkoppla').get(0));
+        var config = formConfig($(this).closest('form'));
+        app = new Ordkoppla($('#ordkoppla').get(0), config);
         app.start([$('#word1').val()]);
     });
 
     $('#ordkoppla-random').click(function () {
-        app = new Ordkoppla($('#ordkoppla').get(0));
+        var config = formConfig($(this).closest('form'));
+        app = new Ordkoppla($('#ordkoppla').get(0), config);
         i = Math.floor(Math.random() * sample_lemgrams.length);
         app.start([sample_lemgrams[i]]);
     });
+
+    /**
+     * Extract config from controls form.
+     */
+    function formConfig(form) {
+        var config = {};
+        $(form).serializeArray().forEach(function (item) {
+            var match = item.name.match(/^(.+)\[(.+)]$/);
+            if (match && ([_, key, val] = match)) {
+                if (config[key] === undefined) {
+                    config[key] = [];
+                }
+                config[key].push(val);
+            }
+        });
+        return config;
+    }
 
     /**
      * Tiny configurable toggle support.
@@ -225,7 +243,7 @@ $(document).ready(function () {
             show: 'Show',
             hide: 'Hide'
         }, $togglable.data('togglable'));
-        var $toggle = $('<a href="#">').text(config.hide).click(function (event) {
+        var $toggle = $('<a href="#" class="toggle">').text(config.hide).click(function (event) {
             event.preventDefault();
             $togglable.toggle();
             $toggle.text(!$togglable.is(':visible') ? config.show : config.hide);
