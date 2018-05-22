@@ -128,7 +128,7 @@ $(document).ready(function () {
         // Add links to the graph.
         items.forEach(function (item) {
             if (graph_dict.hasOwnProperty(item.word)) {
-                addEdge(from, item.word, Math.log(item.item.freq));
+                addEdge(from, item.word);
             }
         });
     }
@@ -141,33 +141,15 @@ $(document).ready(function () {
         return nodes.get(graph_dict[word]);
     }
 
-    function addEdge(from, to, weight) {
-        var new_edge = {
-            from: graph_dict[from],
-            to: graph_dict[to],
-            value: weight,
-            length: 1 / weight
-        };
-        var edge_search = edges.get({
-            filter: function (item) {
-                return item.from == new_edge.from && item.to == new_edge.to;
-            }
-        });
-        var edge_reverse_search = edges.get({
-            filter: function (item) {
-                return item.from == new_edge.to && item.to == new_edge.from;
-            }
-        });
-        if (!edge_search.length) {
-            if (edge_reverse_search.length) {
-                edge_reverse_search.forEach(function (edge) {
-                    edge.value = Math.log(Math.exp(edge.value) + Math.exp(weight));
-                    edges.update(edge);
-                });
-            }
-            else {
-                edges.add(new_edge);
-            }
+    function addEdge(from, to) {
+        // Edge ID deterministically created from node IDs.
+        var edge_id = [graph_dict[from], graph_dict[to]].sort().join('-');
+        if (!edges.get(edge_id)) {
+            edges.add({
+                id: edge_id,
+                from: graph_dict[from],
+                to: graph_dict[to]
+            });
         }
     }
 
