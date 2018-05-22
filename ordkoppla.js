@@ -5,8 +5,6 @@
 $(document).ready(function () {
 
     /* TODO
-     * - hide new words unless important (what is important?
-     * - animated loading bg
      * - interactive edges: show relations
      */
 
@@ -16,10 +14,11 @@ $(document).ready(function () {
     var nodes;
     var edges;
     var graph;
-    var graph_dict = {};
-    var count = 0;
-    var start_nodes = [];
+    var graph_dict;
+    var count;
+    var start_nodes;
 
+    var allowed_pos = ['NN', 'VB'];
     var network_options = {
         nodes: {
             shape: 'ellipse',
@@ -39,7 +38,7 @@ $(document).ready(function () {
             barnesHut: {
                 avoidOverlap: 0.4,
                 springLength: 0,
-                centralGravity: 0.1
+                centralGravity: 0.2
             }
         },
         interaction: {hover: true}
@@ -59,15 +58,21 @@ $(document).ready(function () {
         }).on('hoverNode', function (params) {
             nodes.update({id: params.node, physics: false});
         }).on('blurNode', function (params) {
-            nodes.update({id: params.node, physics: !start_nodes.includes(params.node)});
+            nodes.update({
+                id: params.node,
+                physics: !start_nodes.includes(params.node)
+            });
             graph.unselectAll();
         });
+        graph_dict = {};
+        count = 0;
+        start_nodes = [];
     }
 
     function start(words) {
         $.each(words, function (i, word) {
-            x = (i - words.length / 2 + .5) * $('#ordkoppla').width() / words.length;
-            var node = addWordNode(word, {'x': x, 'y': 0,
+            var node = addWordNode(word, {
+                'x': 0, 'y': 0,
                 'physics': false,
                 'font': {'size': 24}
             });
@@ -94,25 +99,37 @@ $(document).ready(function () {
     }
 
     function relations(from, json) {
-        // Finding the direction of a link.
-        function dep_or_head(item) {
-            return item.head === from ? 'dep' : 'head';
-        }
-
-        // Sort by frequency, filter by POS, select top few.
-        allowed_pos = ['NN', 'VB'];
-        var selection = json.relations.sort(function (a, b) {
-            return b.freq - a.freq;
+        var items = json.relations.map(function (item) {
+            var part = item.head === from ? 'dep' : 'head';
+            return {
+                word: clean(item[part]),
+                pos: item[part + 'pos'],
+                item: item
+            };
         });
-        selection = selection.filter(function(item) {
-            return allowed_pos.includes(item[dep_or_head(item) + 'pos']);
-        }).slice(0, 8);
 
-        // Add each link to the graph.
-        selection.forEach(function (item) {
-            // The from word can be either head or dep; add the other one.
-            var to = clean(item[dep_or_head(item)]);
-            addWord(from, to, Math.log(item.freq));
+        // Sort by frequency, filter by POS.
+        items = items.sort(function (a, b) {
+            return b.item.freq - a.item.freq;
+        }).filter(function (item) {
+            return allowed_pos.includes(item.pos);
+        });
+
+        // Add a few new words to the graph.
+        var added = 0;
+        items.forEach(function (item) {
+            if (added < 6 && !graph_dict.hasOwnProperty(item.word)) {
+                var xy = graph.getPositions(graph_dict[from])[graph_dict[from]];
+                addWordNode(item.word, xy);
+                added++;
+            }
+        });
+
+        // Add links to the graph.
+        items.forEach(function (item) {
+            if (graph_dict.hasOwnProperty(item.word)) {
+                addEdge(from, item.word, Math.log(item.item.freq));
+            }
         });
     }
 
@@ -124,26 +141,33 @@ $(document).ready(function () {
         return nodes.get(graph_dict[word]);
     }
 
-    function addWord(from, to, weight) {
-        // Add node if new.
-        addWordNode(to, graph.getPositions(graph_dict[from])[graph_dict[from]]);
-        // Add or thicken edge.
-        addEdge(from, to, weight);
-    }
-
     function addEdge(from, to, weight) {
-        // Edge ID deterministically created from node IDs.
-        var edge_id = [graph_dict[from], graph_dict[to]].sort(function (a, b) {
-            return a - b
-        }).join('-');
-        if (!edges.get(edge_id)) {
-            edges.add({
-                id: edge_id,
-                from: graph_dict[from],
-                to: graph_dict[to],
-                value: weight,
-                length: 1 / weight
-            });
+        var new_edge = {
+            from: graph_dict[from],
+            to: graph_dict[to],
+            value: weight,
+            length: 1 / weight
+        };
+        var edge_search = edges.get({
+            filter: function (item) {
+                return item.from == new_edge.from && item.to == new_edge.to;
+            }
+        });
+        var edge_reverse_search = edges.get({
+            filter: function (item) {
+                return item.from == new_edge.to && item.to == new_edge.from;
+            }
+        });
+        if (!edge_search.length) {
+            if (edge_reverse_search.length) {
+                edge_reverse_search.forEach(function (edge) {
+                    edge.value = Math.log(Math.exp(edge.value) + Math.exp(weight));
+                    edges.update(edge);
+                });
+            }
+            else {
+                edges.add(new_edge);
+            }
         }
     }
 
