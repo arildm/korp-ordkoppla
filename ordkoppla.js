@@ -6,6 +6,7 @@ $(document).ready(function () {
 
     /* TODO
      * - hide new words unless important (what is important?
+     * - animated loading bg
      */
 
     var url = 'https://ws.spraakbanken.gu.se/ws/korp/v7/';
@@ -21,6 +22,7 @@ $(document).ready(function () {
     var network_options = {
         nodes: {
             shape: 'ellipse',
+            chosen: false,
             color: {background: 'white', border: 'darkgray'}
         },
         groups: {
@@ -40,9 +42,7 @@ $(document).ready(function () {
                 springConstant: 0.1
             }
         },
-        interaction: {
-            hover: true
-        }
+        interaction: {hover: true}
     };
 
     function init() {
@@ -156,7 +156,7 @@ $(document).ready(function () {
     });
     $('#ordkoppla-submit').click(function () {
         init();
-        start([$('#word1').val(), $('#word2').val()]);
+        start([$('#word1').val()]);
     });
 
 });
