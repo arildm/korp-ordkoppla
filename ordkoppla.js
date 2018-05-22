@@ -15,7 +15,7 @@ function Ordkoppla(element, config) {
     this.config = $.extend({
         api_url: 'https://ws.spraakbanken.gu.se/ws/korp/v7/',
         allowed_pos: ['NN', 'VB'],
-        batch_size: 6,
+        batch_size: 5,
         corpus: 'WIKIPEDIA-SV',
         network_options: {
             nodes: {
