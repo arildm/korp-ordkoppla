@@ -1,6 +1,7 @@
 body, input {
     font-family: sans-serif;
     font-size: 1em;
+    color: #2c2c2c;
 }
 
 input {
@@ -28,17 +29,24 @@ a, a:visited {
     text-decoration: none;
 }
 
+.panel {
+    background: rgba(255, 255, 255, .6);
+    max-width: 30em;
+    padding: .5em;
+}
+
+#footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+}
+
 .toggle {
     font-size: 80%;
 }
 
 .hidden {
     display: none;
-}
-
-#ordkoppla-controls {
-    background: rgba(255, 255, 255, .6);
-    max-width: 30em;
 }
 
 #ordkoppla {

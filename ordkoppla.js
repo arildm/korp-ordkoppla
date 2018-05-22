@@ -103,7 +103,11 @@ Ordkoppla.prototype = {
         this.nodes.update({id: this.graph_dict[lemgram], group: 'loading'});
         $.ajax({
             url: this.config.api_url + 'relations',
-            data: {corpus: this.config.corpus.join(','), type: 'lemgram', word: lemgram},
+            data: {
+                corpus: this.config.corpus.join(','),
+                type: 'lemgram',
+                word: lemgram
+            },
             dataType: 'json',
             success: (function (json) {
                 if (json.relations !== undefined) {
@@ -200,7 +204,7 @@ var app;
 
 $(document).ready(function () {
 
-    $('#ordkoppla-controls form').submit(function (e) {
+    $('#controls form').submit(function (e) {
         e.preventDefault();
     });
 
@@ -245,10 +249,11 @@ $(document).ready(function () {
         }, $togglable.data('togglable'));
         var $toggle = $('<a href="#" class="toggle">').text(config.hide).click(function (event) {
             event.preventDefault();
-            $togglable.toggle();
-            $toggle.text(!$togglable.is(':visible') ? config.show : config.hide);
+            $togglable.slideToggle({complete: function() {
+                $toggle.text(!$togglable.is(':visible') ? config.show : config.hide);
+            }});
         });
-        $('<div>').attr('id', $togglable.attr('id') + '-toggle')
+        $('<div>').attr('id', $togglable.attr('id') + '_toggle')
             .append($toggle)
             .insertAfter($togglable);
     })
