@@ -66,11 +66,7 @@ Ordkoppla.prototype = {
      */
     start: function (words) {
         $.each(words, (function (i, word) {
-            var node = this.addWordNode(word, {
-                'x': 0, 'y': 0,
-                // 'physics': false,
-                // 'font': {'size': 24}
-            });
+            var node = this.addWordNode(word, {'x': 0, 'y': 0});
             this.start_nodes.push(node.id);
             this.search(word);
         }).bind(this));

@@ -9,41 +9,7 @@
 </head>
 <body>
 
-<div id="controls-container" class="panel">
-    <div id="controls" class="togglable" data-togglable='{"show": "▶ Visa kontroller", "hide": "▲ Göm kontroller"}'>
-        <form action="#">
-            <p>
-                <input id="word1" name="words[0]" value="skapa..vb.1" size="10">
-                <input id="ordkoppla-search" type="submit" value="Starta">
-                <input id="ordkoppla-random" type="submit" value="Slumpa">
-            </p>
-            <p>
-                <div class="field-heading">Korpusar</div>
-                <div><input type="checkbox" id="corpus-romi" name="corpus[ROMI]"> <label for="corpus-romi">Romaner I</label></div>
-                <div><input type="checkbox" id="corpus-romii" name="corpus[ROMII]"> <label for="corpus-romii">Romaner II</label></div>
-                <div><input type="checkbox" id="corpus-wikipedia-sv" name="corpus[WIKIPEDIA-SV]" checked="checked"> <label for="corpus-romii">Wikipedia</label></div>
-                <div><input type="checkbox" id="corpus-twitter" name="corpus[TWITTER]"> <label for="corpus-twitter">Twitter</label></div>
-            </p>
-        </form>
-
-        <div id="help">
-            <p>Undersök ord och deras grannar.</p>
-            <ul>
-                <li>Ange eller slumpa fram ett lemgram. Ett lemgram är ett ord och dess ordklass på ett format som Språkbanken bestämt.</li>
-                <li>Bubblorna färgas efter ordklass. Klicka på en bubbla för att ladda fler grannar.</li>
-                <li>Det går bra att dra omkring och zooma.</li>
-            </ul>
-        </div>
-    </div>
-</div>
-
 <div id="ordkoppla"></div>
-
-<div id="footer" class="panel">
-    Av <a href="http://arild.klavaro.se/">Arild</a>
-    med hjälp av <a href="https://ws.spraakbanken.gu.se/ws/korp/v7/#basic-information" target="_blank">Korp API</a>
-    och <a href="http://visjs.org/" target="_blank">vis.js</a>
-</div>
 
 <script src="vis.min.js"></script>
 <script src="jquery-3.3.1.min.js"></script>
