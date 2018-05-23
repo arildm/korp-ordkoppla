@@ -48,17 +48,20 @@ $(document).ready(function () {
                     checked: 'checked'
                 }))
                 .append($('<label>').attr('for', 'corpus-' + code).text(corpora[code]));
-        })));
+        })))
+        .append($('<p id="footer">').html('Byggt av <a href="http://arild.klavaro.se/">Arild</a> ' +
+            'med hjälp av <a href="https://ws.spraakbanken.gu.se/ws/korp/v7/#basic-information" target="_blank">Korp API</a> ' +
+            'och <a href="http://visjs.org/" target="_blank">vis.js</a>.'));
 
     $help = $('<div id="help" class="panel">')
         .append($('<div>').html('\
-        <p>Strecken mellan ordbubblorna visar att orden ofta förekommer tillsammans i en <em>dependensrelation</em>.\
+        <p>Strecken mellan ordbubblorna visar att orden ofta förekommer tillsammans i en grammatisk relation.\
         Till exempel förekommer "ge" ofta med "möjlighet" i uttryck som "det <em>gav</em> dem <em>möjligheten</em> att...".</p>\
         <p><img src="edges.png"></p>\
         <p>Klicka på en bubbla för att ladda fler "grannar". En bubbla blir blå när den laddar, och färgas sedan efter ordklass: verb är gröna, substantiv röda och adjektiv gula.</p>\
         <p>Om du vill börja om från början kan du helt enkelt ladda om sidan.</p>\
         '))
-        .append($('<button>').text('Göm förklaring')
+        .append($('<a href="#">').text('Göm förklaring')
             .click(function () { toggleHelp(false) }))
         .hide();
 
@@ -73,15 +76,10 @@ $(document).ready(function () {
 
     $canvas = $('<div id="canvas">');
 
-    $footer = $('<div id="footer">').html('Av <a href="http://arild.klavaro.se/">Arild</a> ' +
-        'med hjälp av <a href="https://ws.spraakbanken.gu.se/ws/korp/v7/#basic-information" target="_blank">Korp API</a> ' +
-        'och <a href="http://visjs.org/" target="_blank">vis.js</a>');
-
     $('#ordkoppla')
         .append($panel)
         .append($helpToggle)
-        .append($canvas)
-        .append($footer);
+        .append($canvas);
 
     function start(lemgram) {
         var config = {corpus: []}
@@ -93,11 +91,12 @@ $(document).ready(function () {
         app.start([lemgram]);
 
         $front.hide();
-        $help.show();
+        toggleHelp(true);
     }
 
     function toggleHelp(on) {
         $panel.toggle(on);
+        $help.toggle(on);
         $helpToggle.toggle(!on);
     }
 
