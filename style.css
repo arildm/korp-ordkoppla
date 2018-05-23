@@ -1,10 +1,10 @@
-body, input {
+body {
     font-family: sans-serif;
     color: #2c2c2c;
     margin: 1em;
 }
 
-input, button {
+button {
     font-size: 120%;
     border: thin solid lightgray;
     background: whitesmoke;
